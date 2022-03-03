@@ -1,0 +1,100 @@
+#!/usr/local/bin/python3
+
+import re, sys, math
+f = open(sys.argv[1])
+
+treelist = []
+# readline() advances line position in file
+numVertices = int(f.readline().strip()) # get # vertices and remove newline
+numEdges = int(f.readline().strip()) # get # edges and remove newline
+
+
+lines = f.readlines() # will start reading file on line 3
+for count, line in enumerate(lines):
+    if line == '\n': 
+       break
+    else:
+       line = line.strip() # remove new line
+       line = re.split(' ', line) # split numbers into arrays
+       line2 = list(map(float, line)) # convert strings to floats to work for weights
+       line2.append(count + 1) # will need to append count to keep track of original order -- which is label
+       line2[0] = math.trunc(line2[0]) # convert first two elements of list back into ints
+       line2[1] = math.trunc(line2[1])
+       treelist.append(line2)
+
+treelist.sort(key = lambda treelist: treelist[2])
+
+f.close()
+
+
+
+class Graph:
+    def __init__(self, vertices):
+        self.graph = []
+        self.vertices = vertices
+
+    def addEdge(self, a):
+        # a is array with [edge1, edge2, weight, originalindex]
+        self.graph.append(a)
+
+    def findSet(self, parent, i):
+        if parent[i] == i:
+            return i
+        return self.findSet(parent, parent[i])
+
+    def union(self, parent, rank, x, y):
+        xroot = self.findSet(parent, x)
+        yroot = self.findSet(parent, y)
+ 
+        if rank[xroot] < rank[yroot]:
+            parent[xroot] = yroot
+        elif rank[xroot] > rank[yroot]:
+            parent[yroot] = xroot
+ 
+        else:
+            parent[yroot] = xroot
+            rank[xroot] += 1
+
+    def MSTKruskal(self):
+        result = []
+        parent = []
+        rank = []
+        i = 0
+ 
+        for node in range(self.vertices + 1):
+            parent.append(node)
+            rank.append(0)
+        e = 0
+        
+        # Number of edges to be taken is equal to V-1
+        while e < self.vertices - 1:
+ 
+            u, v, w, index = self.graph[i]
+            i = i + 1
+            x = self.findSet(parent, u)
+            y = self.findSet(parent, v)
+
+            #only include edges that dont form a cycle
+            if x != y:
+                e = e + 1
+                result.append([u, v, w, index])
+                self.union(parent, rank, x, y)
+            # Else discard the edge
+        # open output file and if it doesnt exist, create it
+        t = open(sys.argv[2], "w")
+        minimumCost = 0
+        width = 4
+        for u, v, weight, index in result:
+            minimumCost += weight
+            line = "{}: ({}, {}) {}\n".format(str(index).rjust(width), u, v, round(float(weight), 1))
+            t.write(line)
+            minCost = "{:.2f}".format(round(minimumCost, 2))
+
+            
+        t.write("Total Weight = {}".format(minCost))
+#add all sorted edges to graph
+g = Graph(numVertices)
+for x in range(len(treelist)):
+    g.addEdge(treelist[x])
+
+g.MSTKruskal()
